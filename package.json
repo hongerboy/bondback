@@ -1,0 +1,14 @@
+{
+  "name": "bondback-hero",
+  "version": "1.0.0",
+  "description": "BondBack Hero - Professional rental bond recovery and cleaning services",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.7.0",
+    "express": "^4.21.0"
+  }
+}
