@@ -585,6 +585,15 @@ ul { list-style: none; }
 }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 
+.form-error {
+    display: block; font-size: 0.75rem; color: #ef4444; margin-top: 0.3rem; font-weight: 500;
+}
+.form-group input[aria-invalid="true"],
+.form-group select[aria-invalid="true"] {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
 .form-submit { width: 100%; margin-top: 0.5rem; padding: 0.875rem; }
 .form-privacy { font-size: 0.75rem; color: var(--text-dim); margin-top: 1rem; text-align: center; }
 .form-privacy i { color: var(--amber); margin-right: 0.25rem; }
@@ -746,7 +755,8 @@ ul { list-style: none; }
     .hero-buttons { flex-direction: column; }
     .hero-buttons .btn { width: 100%; }
     .hero-badges { flex-direction: column; }
-    .hero-mockup { display: none; }
+    .hero-mockup { justify-content: center; }
+    .mockup-card { max-width: 100%; }
 
     .problem, .how-it-works, .testimonials, .pricing, .faq,
     .services-section, .why-us { padding: 4rem 0; }

@@ -13,8 +13,38 @@ if (!fs.existsSync(dbDir)) {
 }
 
 // Middleware
-app.use(express.json());
+app.use(express.json({ limit: '16kb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Rate limiting (in-memory, per IP)
+const rateLimitMap = new Map();
+const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
+const RATE_LIMIT_MAX = 10; // max submissions per window
+
+function rateLimit(req, res, next) {
+    const ip = req.ip || req.connection.remoteAddress;
+    const now = Date.now();
+    const entry = rateLimitMap.get(ip);
+
+    if (!entry || now - entry.start > RATE_LIMIT_WINDOW) {
+        rateLimitMap.set(ip, { start: now, count: 1 });
+        return next();
+    }
+
+    entry.count++;
+    if (entry.count > RATE_LIMIT_MAX) {
+        return res.status(429).json({ success: false, error: 'Too many submissions. Please try again later.' });
+    }
+    next();
+}
+
+// Clean up stale rate limit entries every 30 minutes
+setInterval(() => {
+    const now = Date.now();
+    for (const [ip, entry] of rateLimitMap) {
+        if (now - entry.start > RATE_LIMIT_WINDOW) rateLimitMap.delete(ip);
+    }
+}, 30 * 60 * 1000);
 
 // Database setup
 const db = new Database(path.join(__dirname, 'db', 'bondback.db'));
@@ -25,6 +55,7 @@ db.exec(`
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         phone TEXT NOT NULL,
+        email TEXT,
         city TEXT,
         expected_return_date TEXT,
         cleaning_plan TEXT,
@@ -34,22 +65,43 @@ db.exec(`
     )
 `);
 
+// Add email column if it doesn't exist (migration for existing DBs)
+try {
+    db.exec('ALTER TABLE leads ADD COLUMN email TEXT');
+} catch (_) {
+    // Column already exists
+}
+
 const insertLead = db.prepare(`
-    INSERT INTO leads (name, phone, city, expected_return_date, cleaning_plan, professional_cleaning_clause, source_page)
-    VALUES (@name, @phone, @city, @expectedReturnDate, @cleaningPlan, @professionalCleaningClause, @sourcePage)
+    INSERT INTO leads (name, phone, email, city, expected_return_date, cleaning_plan, professional_cleaning_clause, source_page)
+    VALUES (@name, @phone, @email, @city, @expectedReturnDate, @cleaningPlan, @professionalCleaningClause, @sourcePage)
 `);
 
+// Input validation helper
+function sanitize(val, maxLen) {
+    if (typeof val !== 'string') return '';
+    return val.trim().slice(0, maxLen);
+}
+
 // API Routes
-app.post('/api/leads', (req, res) => {
+app.post('/api/leads', rateLimit, (req, res) => {
     try {
+        const name = sanitize(req.body.name, 200);
+        const phone = sanitize(req.body.phone, 30);
+
+        if (!name || !phone) {
+            return res.status(400).json({ success: false, error: 'Name and phone are required.' });
+        }
+
         const data = {
-            name: req.body.name || '',
-            phone: req.body.phone || '',
-            city: req.body.city || '',
-            expectedReturnDate: req.body.expectedReturnDate || '',
-            cleaningPlan: req.body.cleaningPlan || '',
-            professionalCleaningClause: req.body.professionalCleaningClause || '',
-            sourcePage: req.body.sourcePage || 'homepage'
+            name,
+            phone,
+            email: sanitize(req.body.email, 254),
+            city: sanitize(req.body.city, 100),
+            expectedReturnDate: sanitize(req.body.expectedReturnDate, 20),
+            cleaningPlan: sanitize(req.body.cleaningPlan, 100),
+            professionalCleaningClause: sanitize(req.body.professionalCleaningClause, 20),
+            sourcePage: sanitize(req.body.sourcePage, 50) || 'homepage'
         };
 
         const result = insertLead.run(data);
