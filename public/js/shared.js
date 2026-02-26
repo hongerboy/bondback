@@ -103,25 +103,31 @@
                 submitBtn.textContent = 'Submitting...';
             }
 
-            fetch('/api/leads', {
+            var originalBtnText = submitBtn ? submitBtn.textContent : '';
+
+            fetch('https://formspree.io/f/xvzblakw', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                 body: JSON.stringify(formData)
             })
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                if (modalFormEl) modalFormEl.style.display = 'none';
-                if (modalSuccess) modalSuccess.style.display = 'block';
+            .then(function(res) {
+                if (res.ok) {
+                    if (modalFormEl) modalFormEl.style.display = 'none';
+                    if (modalSuccess) modalSuccess.style.display = 'block';
+                } else {
+                    return res.json().then(function(data) {
+                        throw new Error(data.errors ? data.errors.map(function(e) { return e.message; }).join(', ') : 'Submission failed');
+                    });
+                }
             })
-            .catch(function() {
-                // Still show success even if backend is unavailable (graceful degradation)
-                if (modalFormEl) modalFormEl.style.display = 'none';
-                if (modalSuccess) modalSuccess.style.display = 'block';
+            .catch(function(err) {
+                alert('Something went wrong. Please try again or call us directly.');
+                console.error('Form error:', err);
             })
             .finally(function() {
                 if (submitBtn) {
                     submitBtn.disabled = false;
-                    submitBtn.textContent = 'Get My Free Assessment';
+                    submitBtn.textContent = originalBtnText;
                 }
             });
         });

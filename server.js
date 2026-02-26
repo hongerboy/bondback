@@ -1,13 +1,20 @@
 const express = require('express');
+const fs = require('fs');
 const path = require('path');
 const Database = require('better-sqlite3');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Ensure db directory exists
+const dbDir = path.join(__dirname, 'db');
+if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
+}
+
 // Middleware
 app.use(express.json());
-app.use(express.static(path.join(__dirname)));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Database setup
 const db = new Database(path.join(__dirname, 'db', 'bondback.db'));
@@ -54,7 +61,7 @@ app.post('/api/leads', (req, res) => {
 });
 
 // Serve pages
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 // Start server
 app.listen(PORT, () => {
