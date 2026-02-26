@@ -14,7 +14,7 @@ if (!fs.existsSync(dbDir)) {
 
 // Middleware
 app.use(express.json({ limit: '16kb' }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'docs')));
 
 // Rate limiting (in-memory, per IP)
 const rateLimitMap = new Map();
