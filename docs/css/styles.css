@@ -453,10 +453,11 @@ ul { list-style: none; }
 .pricing-card .btn { width: 100%; }
 
 .pricing-disclaimer {
-    margin-top: 2.5rem; font-size: 0.78rem; color: var(--text-dim);
+    margin-top: 4rem; font-size: 0.78rem; color: var(--text-dim);
     line-height: 1.7; max-width: 700px; text-align: center;
     margin-left: auto; margin-right: auto;
     padding-top: 1.5rem; border-top: 1px solid var(--border);
+    position: relative; z-index: 3;
 }
 
 /* ── FAQ ── */
