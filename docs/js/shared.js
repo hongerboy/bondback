@@ -163,12 +163,11 @@
 
             // Send to backend
             var submitBtn = this.querySelector('.form-submit');
+            var originalBtnText = submitBtn ? submitBtn.textContent : '';
             if (submitBtn) {
                 submitBtn.disabled = true;
                 submitBtn.textContent = 'Submitting...';
             }
-
-            var originalBtnText = submitBtn ? submitBtn.textContent : '';
 
             fetch('https://formspree.io/f/xvzblakw', {
                 method: 'POST',
@@ -180,9 +179,7 @@
                     if (modalFormEl) modalFormEl.style.display = 'none';
                     if (modalSuccess) modalSuccess.style.display = 'block';
                 } else {
-                    return res.json().then(function(data) {
-                        throw new Error(data.error || 'Submission failed');
-                    });
+                    throw new Error('Submission failed (status ' + res.status + ')');
                 }
             })
             .catch(function(err) {
