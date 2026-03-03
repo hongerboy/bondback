@@ -154,11 +154,11 @@
 
             if (!valid) return;
 
-            // Collect form data
+            // Collect form data (skip Formspree special _fields and empty values)
             var formData = {};
             var allFields = this.querySelectorAll('input, select, textarea');
             allFields.forEach(function(f) {
-                if (f.name) formData[f.name] = f.value;
+                if (f.name && f.name.charAt(0) !== '_' && f.value) formData[f.name] = f.value;
             });
 
             // Send to backend
