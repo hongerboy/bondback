@@ -170,9 +170,9 @@
 
             var originalBtnText = submitBtn ? submitBtn.textContent : '';
 
-            fetch('/api/leads', {
+            fetch('https://formspree.io/f/xvzblakw', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                 body: JSON.stringify(formData)
             })
             .then(function(res) {
