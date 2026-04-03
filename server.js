@@ -2,6 +2,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const Database = require('better-sqlite3');
+const geoip = require('geoip-lite');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -12,7 +13,35 @@ if (!fs.existsSync(dbDir)) {
     fs.mkdirSync(dbDir, { recursive: true });
 }
 
+// Geo-blocking: only allow Hong Kong (HK) and Australia (AU)
+const ALLOWED_COUNTRIES = ['HK', 'AU'];
+
+function geoBlock(req, res, next) {
+    const ip = req.ip || req.connection.remoteAddress;
+
+    // Allow localhost / private IPs (for local development)
+    if (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1' || ip.startsWith('192.168.') || ip.startsWith('10.')) {
+        return next();
+    }
+
+    const geo = geoip.lookup(ip);
+    if (!geo || !ALLOWED_COUNTRIES.includes(geo.country)) {
+        return res.status(403).send(`
+            <!DOCTYPE html>
+            <html><head><title>Access Restricted</title>
+            <style>body{font-family:sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f5f5f5;color:#333;}
+            .container{text-align:center;padding:2rem;}</style></head>
+            <body><div class="container">
+            <h1>Access Restricted</h1>
+            <p>This service is only available in Australia and Hong Kong.</p>
+            </div></body></html>
+        `);
+    }
+    next();
+}
+
 // Middleware
+app.use(geoBlock);
 app.use(express.json({ limit: '16kb' }));
 app.use(express.static(path.join(__dirname, 'docs')));
 
